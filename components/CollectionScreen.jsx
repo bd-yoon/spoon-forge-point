@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getCollection, getTotalValue, exchangeAll } from '../lib/collectionState'
 import { hasExchangedToday, setExchangedToday } from '../lib/gameState'
+import { formatProb } from '../lib/spoonLogic'
 
 export default function CollectionScreen({ onBack }) {
   const [collection, setCollection] = useState([])
@@ -93,10 +94,15 @@ export default function CollectionScreen({ onBack }) {
                 }`}
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                className="w-12 h-12 rounded-full flex items-center justify-center p-1"
                 style={{ background: t.count > 0 ? t.glow : 'rgba(107,114,128,0.1)' }}
               >
-                {t.emoji}
+                <img
+                  src={t.svgSrc}
+                  alt={t.label}
+                  className="w-full h-full object-contain"
+                  style={{ opacity: t.count > 0 ? 1 : 0.35 }}
+                />
               </div>
               <span
                 className="text-[18px] font-bold"
@@ -106,9 +112,20 @@ export default function CollectionScreen({ onBack }) {
               </span>
               <span className="text-[11px] text-[#6B7684]">{t.label}</span>
               <span className="text-[11px] text-[#6B7684]">{t.value}원/개</span>
+              <span className="text-[10px] font-medium" style={{ color: t.count > 0 ? t.color : '#B0B8C1' }}>
+                확률 {formatProb(t.prob)}
+              </span>
             </motion.div>
           ))}
         </div>
+      </div>
+
+      {/* 확률 법적 고지 */}
+      <div className="px-4 pt-2 pb-1">
+        <p className="text-[11px] text-[#B0B8C1] leading-relaxed text-center">
+          수저 등급별 출현 확률은 위와 같습니다.<br />
+          확률은 1회 시도당 기준이며 각 시도는 독립시행입니다.
+        </p>
       </div>
 
       {/* 교환 CTA */}

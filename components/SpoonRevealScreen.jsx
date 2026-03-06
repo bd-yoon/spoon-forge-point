@@ -125,13 +125,17 @@ export default function SpoonRevealScreen({ spoon, onContinue, onGoCollection })
           className="flex flex-col items-center gap-2"
         >
           <div
-            className="w-28 h-28 rounded-full flex items-center justify-center"
+            className="w-32 h-32 rounded-full flex items-center justify-center p-4"
             style={{
               background: `radial-gradient(circle, ${spoon.glow}, transparent)`,
-              boxShadow: `0 0 40px ${spoon.glow}`,
+              boxShadow: `0 0 50px ${spoon.glow}`,
             }}
           >
-            <span style={{ fontSize: 72 }}>{spoon.emoji}🥄</span>
+            <img
+              src={spoon.svgSrc}
+              alt={spoon.label}
+              className="w-full h-full object-contain drop-shadow-lg"
+            />
           </div>
         </motion.div>
 

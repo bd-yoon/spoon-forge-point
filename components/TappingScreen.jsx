@@ -87,8 +87,8 @@ export default function TappingScreen({ spoon, onComplete, onBack }) {
     // 파티클
     spawnParticles(clientX, clientY)
 
-    // 햅틱
-    navigator.vibrate?.(6)
+    // 햅틱 (10ms — 더 선명한 클릭감)
+    navigator.vibrate?.(10)
 
     // 완료 체크
     if (nextCount >= targetTaps && !completedRef.current) {
@@ -173,8 +173,8 @@ export default function TappingScreen({ spoon, onComplete, onBack }) {
         </svg>
       )}
 
-      {/* 바위 중앙 */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
+      {/* 바위 + 안내 텍스트 (인라인 배치) */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6">
         <motion.div
           animate={controls}
           className="flex items-center justify-center"
@@ -187,16 +187,16 @@ export default function TappingScreen({ spoon, onComplete, onBack }) {
         >
           {rockEmoji}
         </motion.div>
-      </div>
 
-      {/* 안내 텍스트 */}
-      <div className="relative z-10 pb-16 text-center">
-        <p className="text-[14px] text-[#6B7684] font-medium">
-          {crackStage === 0 && '화면을 탭해서 바위를 쪼개세요!'}
-          {crackStage === 1 && '균열이 생기고 있어요... 계속 두드리세요!'}
-          {crackStage === 2 && '거의 다 왔어요! 조금만 더!'}
-          {crackStage === 3 && '💥 쪼개지고 있어요!'}
-        </p>
+        {/* 안내 텍스트 — 눈에 잘 띄는 pill 스타일 */}
+        <div className="bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/60">
+          <p className="text-[17px] font-bold text-[#191F28] text-center">
+            {crackStage === 0 && '화면을 탭해서 바위를 쪼개세요! 🪨'}
+            {crackStage === 1 && '균열이 생겼어요! 계속 두드리세요! 💪'}
+            {crackStage === 2 && '거의 다 왔어요! 조금만 더! 🔥'}
+            {crackStage === 3 && '💥 쪼개지고 있어요!'}
+          </p>
+        </div>
       </div>
     </div>
   )

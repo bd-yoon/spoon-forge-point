@@ -212,7 +212,7 @@ export default function MainScreen({ onStartAttempt, onGoCollection }) {
             <div className="flex items-center gap-3">
               {todaySpoons.slice(0, 4).map(t => (
                 <div key={t.id} className="flex flex-col items-center gap-0.5">
-                  <span className="text-xl">{t.emoji}</span>
+                  <img src={t.svgSrc} alt={t.label} className="w-9 h-9 object-contain" />
                   <span className="text-[11px] text-[#6B7684]">{t.count}개</span>
                 </div>
               ))}
@@ -233,7 +233,7 @@ export default function MainScreen({ onStartAttempt, onGoCollection }) {
             onClick={handleStart}
             className="w-full py-4 rounded-2xl bg-[#0064FF] text-white text-[16px] font-bold shadow-md active:scale-95 transition-transform"
           >
-            바위 두드리기
+            숟가락 만들기
           </button>
         ) : adAttemptsLeft > 0 ? (
           <button
