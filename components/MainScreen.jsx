@@ -6,7 +6,7 @@ import {
   getAttemptsLeft, getAdAttemptsLeft, addAdAttempt,
   isHammerActive, activateHammer,
   isDiamondBoosted, activateDiamondBoost, getDiamondBoostRemainingMs,
-  getStreak, getTodayValue,
+  getTodayValue,
   useAttempt, addTodayValue,
 } from '../lib/gameState'
 import { rollSpoon, getTapCount } from '../lib/spoonLogic'
@@ -20,7 +20,6 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
   const [hammerActive, setHammerActive] = useState(false)
   const [diamondBoosted, setDiamondBoosted] = useState(false)
   const [boostRemaining, setBoostRemaining] = useState(0)
-  const [streak, setStreak] = useState(1)
   const [todayValue, setTodayValue] = useState(0)
   const [collection, setCollection] = useState([])
   const [adLoading, setAdLoading] = useState(null) // 'attempt' | 'hammer' | 'diamond'
@@ -38,6 +37,9 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
   const particlesRef = useRef([])
   const animFrameRef = useRef(null)
 
+  // 바위 ref (hit-test용)
+  const rockRef = useRef(null)
+
   // framer-motion 바위 bounce
   const tapControls = useAnimation()
 
@@ -47,7 +49,6 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
     setHammerActive(isHammerActive())
     setDiamondBoosted(isDiamondBoosted())
     setBoostRemaining(getDiamondBoostRemainingMs())
-    setStreak(getStreak())
     setTodayValue(getTodayValue())
     setCollection(getCollection())
   }, [])
@@ -130,6 +131,18 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
 
   function handleScreenTap(clientX, clientY) {
     if (completedRef.current) return
+
+    // 세션 시작 전: 바위 위 탭만 허용
+    if (!isTapping && rockRef.current) {
+      const rect = rockRef.current.getBoundingClientRect()
+      const padding = 24
+      const inBounds =
+        clientX >= rect.left - padding &&
+        clientX <= rect.right + padding &&
+        clientY >= rect.top - padding &&
+        clientY <= rect.bottom + padding
+      if (!inBounds) return
+    }
 
     if (!isTapping) {
       if (attemptsLeft <= 0) return
@@ -267,18 +280,8 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       )}
 
       {/* 헤더 */}
-      <div className={`relative z-10 flex items-center justify-between px-5 py-3 transition-opacity duration-300 ${isTapping ? 'opacity-40 pointer-events-none' : ''}`}>
+      <div className={`relative z-10 px-5 py-3 transition-opacity duration-300 ${isTapping ? 'opacity-40 pointer-events-none' : ''}`}>
         <h1 className="text-[18px] font-bold text-[#191F28]">숟가락 대장간</h1>
-        {streak > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.3 }}
-            className="flex items-center gap-1 bg-orange-100 text-orange-600 text-[13px] font-semibold px-3 py-1 rounded-full"
-          >
-            🔥 {streak}일
-          </motion.div>
-        )}
       </div>
 
       {/* 진행 바 (탭핑 중) */}
@@ -317,6 +320,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       {/* 바위 영역 */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 px-5 py-4">
         <motion.div
+          ref={rockRef}
           animate={isTapping ? tapControls : { y: [0, -6, 0] }}
           transition={isTapping ? undefined : { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
           className="flex items-center justify-center"
@@ -363,19 +367,24 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
           <button
             onClick={(e) => { e.stopPropagation(); handleAdHammer() }}
             disabled={!!adLoading || hammerActive}
-            className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border transition-all
+            className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border transition-all
               ${hammerActive
                 ? 'bg-green-50 border-green-200 text-green-600'
                 : 'bg-white/80 border-[#E8EDF2] text-[#191F28] active:scale-95'
               } disabled:opacity-60`}
           >
+            {!hammerActive && (
+              <span className="text-[9px] font-bold bg-[#0064FF] text-white px-1.5 py-0.5 rounded-full leading-none">
+                ADS
+              </span>
+            )}
             {adLoading === 'hammer' ? (
               <div className="w-5 h-5 border-2 border-[#0064FF] border-t-transparent rounded-full animate-spin" />
             ) : (
               <span className="text-xl">{hammerActive ? '✅' : '🔨'}</span>
             )}
             <span className="text-[11px] font-medium leading-tight text-center">
-              {hammerActive ? '강화 중' : '해머 강화'}
+              {hammerActive ? '강화 중' : '망치 강화(속도×2)'}
             </span>
           </button>
 
@@ -383,19 +392,24 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
           <button
             onClick={(e) => { e.stopPropagation(); handleAdDiamond() }}
             disabled={!!adLoading || diamondBoosted}
-            className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border transition-all
+            className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border transition-all
               ${diamondBoosted
                 ? 'bg-sky-50 border-sky-200 text-sky-600'
                 : 'bg-white/80 border-[#E8EDF2] text-[#191F28] active:scale-95'
               } disabled:opacity-60`}
           >
+            {!diamondBoosted && (
+              <span className="text-[9px] font-bold bg-[#0064FF] text-white px-1.5 py-0.5 rounded-full leading-none">
+                ADS
+              </span>
+            )}
             {adLoading === 'diamond' ? (
               <div className="w-5 h-5 border-2 border-[#0064FF] border-t-transparent rounded-full animate-spin" />
             ) : (
-              <span className="text-xl">💎</span>
+              <img src="/spoons/spoon-diamond.svg" alt="다이아 수저" className="w-7 h-7 object-contain" />
             )}
             <span className="text-[11px] font-medium leading-tight text-center">
-              {diamondBoosted ? boostDisplay : '확률 ×10'}
+              {diamondBoosted ? boostDisplay : '다이아 확률×10'}
             </span>
           </button>
         </div>
