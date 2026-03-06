@@ -1,5 +1,18 @@
 'use client'
 
+const ROCK_THOUGHTS = [
+  '나는 커서 무엇이 될까... 🤔',
+  '금수저가 되고 싶다... ✨',
+  '누가 좀 두드려줬으면...',
+  '다이아몬드 꿈 꿨어 💎',
+  '오늘도 열심히 살아야지 🪨',
+  '두드리면 열린다던데...',
+  '나도 빛나고 싶어 🌟',
+  '은수저도 나쁘지 않지...',
+  '오늘 운이 좋을 것 같은데? 🍀',
+  '따뜻한 봄이 오면 수저가 될 거야...',
+]
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, useAnimation, AnimatePresence } from 'framer-motion'
 import {
@@ -24,6 +37,9 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
   const [collection, setCollection] = useState([])
   const [adLoading, setAdLoading] = useState(null) // 'attempt' | 'hammer' | 'diamond'
   const [toast, setToast] = useState(null)
+
+  // 바위 생각 말풍선
+  const [thought, setThought] = useState(null)
 
   // 탭핑 세션 상태
   const [isTapping, setIsTapping] = useState(false)
@@ -99,6 +115,30 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       cancelAnimationFrame(animFrameRef.current)
     }
   }, [])
+
+  // 바위 idle 생각 말풍선 타이머
+  useEffect(() => {
+    if (isTapping) {
+      setThought(null)
+      return
+    }
+    let timeoutId
+    let dismissId
+    function scheduleThought() {
+      const delay = 6000 + Math.random() * 6000
+      timeoutId = setTimeout(() => {
+        const msg = ROCK_THOUGHTS[Math.floor(Math.random() * ROCK_THOUGHTS.length)]
+        setThought(msg)
+        dismissId = setTimeout(() => setThought(null), 1200)
+        scheduleThought()
+      }, delay)
+    }
+    scheduleThought()
+    return () => {
+      clearTimeout(timeoutId)
+      clearTimeout(dismissId)
+    }
+  }, [isTapping])
 
   function spawnParticles(x, y) {
     const colors = ['#8B95A1', '#A0A8B0', '#6B7280', '#C5CDD6']
@@ -319,15 +359,44 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
 
       {/* 바위 영역 */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 px-5 py-4">
-        <motion.div
-          ref={rockRef}
-          animate={isTapping ? tapControls : { y: [0, -6, 0] }}
-          transition={isTapping ? undefined : { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-          className="flex items-center justify-center"
-          style={{ fontSize: 160, lineHeight: 1, filter: `drop-shadow(0 20px 30px rgba(0,0,0,0.12)) ${crackStage >= 2 ? 'brightness(0.85)' : ''}` }}
-        >
-          {rockEmoji}
-        </motion.div>
+        <div className="relative flex flex-col items-center">
+          {/* 말풍선 */}
+          <AnimatePresence>
+            {thought && !isTapping && (
+              <motion.div
+                key={thought}
+                initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+                className="absolute bottom-full mb-4 bg-white rounded-2xl px-4 py-2.5 shadow-md border border-[#E8EDF2] whitespace-nowrap pointer-events-none"
+                style={{ zIndex: 20 }}
+              >
+                <p className="text-[14px] font-medium text-[#191F28]">{thought}</p>
+                {/* 꼬리 테두리 */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 top-full"
+                  style={{ width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '9px solid #E8EDF2' }}
+                />
+                {/* 꼬리 흰색 */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 top-full -mt-px"
+                  style={{ width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '8px solid white' }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            ref={rockRef}
+            animate={isTapping ? tapControls : { y: [0, -6, 0] }}
+            transition={isTapping ? undefined : { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+            className="flex items-center justify-center"
+            style={{ fontSize: 160, lineHeight: 1, filter: `drop-shadow(0 20px 30px rgba(0,0,0,0.12)) ${crackStage >= 2 ? 'brightness(0.85)' : ''}` }}
+          >
+            {rockEmoji}
+          </motion.div>
+        </div>
 
         {/* 안내 pill */}
         <AnimatePresence mode="wait">
