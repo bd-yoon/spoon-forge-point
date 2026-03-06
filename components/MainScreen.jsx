@@ -129,7 +129,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       timeoutId = setTimeout(() => {
         const msg = ROCK_THOUGHTS[Math.floor(Math.random() * ROCK_THOUGHTS.length)]
         setThought(msg)
-        dismissId = setTimeout(() => setThought(null), 1200)
+        dismissId = setTimeout(() => setThought(null), 1700)
         scheduleThought()
       }, delay)
     }
