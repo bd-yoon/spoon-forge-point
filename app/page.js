@@ -3,15 +3,12 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import MainScreen from '../components/MainScreen'
-import TappingScreen from '../components/TappingScreen'
 import SpoonRevealScreen from '../components/SpoonRevealScreen'
 import CollectionScreen from '../components/CollectionScreen'
 import { resetDailyStateIfNewDay } from '../lib/gameState'
-import { rollSpoon } from '../lib/spoonLogic'
 
 const SCREEN = {
   MAIN: 'MAIN',
-  TAPPING: 'TAPPING',
   REVEAL: 'REVEAL',
   COLLECTION: 'COLLECTION',
 }
@@ -24,19 +21,15 @@ const screenVariants = {
 
 export default function Page() {
   const [screen, setScreen] = useState(SCREEN.MAIN)
-  const [currentSpoon, setCurrentSpoon] = useState(null) // 현재 attempt 결과
-  const [refresh, setRefresh] = useState(0) // 상태 강제 갱신용
+  const [currentSpoon, setCurrentSpoon] = useState(null)
+  const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
     resetDailyStateIfNewDay()
   }, [])
 
-  function handleStartAttempt(rolledSpoon) {
-    setCurrentSpoon(rolledSpoon)
-    setScreen(SCREEN.TAPPING)
-  }
-
-  function handleTappingComplete() {
+  function handleTappingComplete(spoon) {
+    setCurrentSpoon(spoon)
     setScreen(SCREEN.REVEAL)
   }
 
@@ -63,17 +56,8 @@ export default function Page() {
         {screen === SCREEN.MAIN && (
           <motion.div key={`main-${refresh}`} {...screenVariants} className="w-full min-h-screen min-h-[100dvh]">
             <MainScreen
-              onStartAttempt={handleStartAttempt}
+              onTappingComplete={handleTappingComplete}
               onGoCollection={handleGoCollection}
-            />
-          </motion.div>
-        )}
-        {screen === SCREEN.TAPPING && (
-          <motion.div key="tapping" {...screenVariants} className="w-full min-h-screen min-h-[100dvh]">
-            <TappingScreen
-              spoon={currentSpoon}
-              onComplete={handleTappingComplete}
-              onBack={() => { setRefresh(r => r + 1); setScreen(SCREEN.MAIN) }}
             />
           </motion.div>
         )}
