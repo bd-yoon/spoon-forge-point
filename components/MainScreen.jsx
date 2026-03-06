@@ -132,8 +132,8 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
   function handleScreenTap(clientX, clientY) {
     if (completedRef.current) return
 
-    // 세션 시작 전: 바위 위 탭만 허용
-    if (!isTapping && rockRef.current) {
+    // 항상 바위 위 탭만 허용
+    if (rockRef.current) {
       const rect = rockRef.current.getBoundingClientRect()
       const padding = 24
       const inBounds =
