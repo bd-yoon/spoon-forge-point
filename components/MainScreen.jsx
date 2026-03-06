@@ -350,7 +350,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
 
       {/* 남은 기회 pill (탭핑 중 숨김) */}
       {!isTapping && (
-        <div className="relative z-10 flex justify-center mt-8">
+        <div className="relative z-10 flex justify-center mt-3">
           <div className="bg-[#EBF3FF] text-[#0064FF] text-[14px] font-semibold px-4 py-1.5 rounded-full">
             오늘 남은 기회: {attemptsLeft}회
           </div>
@@ -358,7 +358,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       )}
 
       {/* 바위 영역 */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-start gap-4 px-5 pt-6">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 px-5 pb-8">
         <div className="relative flex flex-col items-center">
           {/* 말풍선 */}
           <AnimatePresence>
