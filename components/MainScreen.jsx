@@ -350,7 +350,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
 
       {/* 남은 기회 pill (탭핑 중 숨김) */}
       {!isTapping && (
-        <div className="relative z-10 flex justify-center mt-1">
+        <div className="relative z-10 flex justify-center mt-8">
           <div className="bg-[#EBF3FF] text-[#0064FF] text-[14px] font-semibold px-4 py-1.5 rounded-full">
             오늘 남은 기회: {attemptsLeft}회
           </div>
@@ -421,10 +421,9 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/60"
             >
-              <p className="text-[17px] font-bold text-[#191F28] text-center">
-                👆 눌러서 수저 만들기
+              <p className="text-[17px] font-bold text-[#191F28]/70 text-center">
+                👆 두들겨서 수저 만들기
               </p>
             </motion.div>
           ) : null}
@@ -477,8 +476,8 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
             ) : (
               <img src="/spoons/spoon-diamond.svg" alt="다이아 수저" className="w-7 h-7 object-contain" />
             )}
-            <span className="text-[11px] font-medium leading-tight text-center">
-              {diamondBoosted ? boostDisplay : '다이아 확률×10'}
+            <span className="text-[10px] font-medium leading-tight text-center">
+              {diamondBoosted ? boostDisplay : '다이아수저 확률×10'}
             </span>
           </button>
         </div>
