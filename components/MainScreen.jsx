@@ -549,7 +549,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#191F28]/90 text-white text-[13px] font-medium px-4 py-2.5 rounded-full whitespace-nowrap z-50"
+            className="fixed bottom-24 left-4 right-4 text-center bg-[#191F28]/90 text-white text-[13px] font-medium px-4 py-2.5 rounded-full z-50"
             style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
           >
             {toast}
