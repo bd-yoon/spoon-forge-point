@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>수저 에셋 크롭 도구</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, sans-serif; background: #f0f4f8; color: #191f28; padding: 20px; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    .hint { font-size: 13px; color: #6b7684; margin-bottom: 16px; }
+
+    .upload-area {
+      border: 2px dashed #b0c4d8; border-radius: 12px; padding: 20px;
+      text-align: center; margin-bottom: 20px; cursor: pointer;
+      background: white; transition: border-color 0.2s;
+    }
+    .upload-area:hover { border-color: #0064ff; }
+    input[type=file] { display: none; }
+
+    .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+
+    /* 좌: 원본 미리보기 */
+    .preview-panel { flex: 0 0 340px; }
+    .preview-panel h2 { font-size: 14px; color: #6b7684; margin-bottom: 8px; }
+    .canvas-wrap { position: relative; display: block; width: 340px; height: 340px; background: #ddd; border-radius: 10px; overflow: hidden; }
+    #preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: none; }
+    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 14px; }
+
+    /* 감도 슬라이더 */
+    .tol-wrap { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+    .tol-wrap label { font-size: 13px; color: #6b7684; white-space: nowrap; }
+    .tol-wrap input { flex: 1; }
+    .tol-wrap span { font-size: 13px; font-weight: bold; width: 24px; }
+
+    /* 우: 5종 카드 */
+    .cards-panel { flex: 1; min-width: 300px; }
+    .cards-panel h2 { font-size: 14px; color: #6b7684; margin-bottom: 8px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+
+    .card { background: white; border-radius: 12px; padding: 12px; border: 1px solid #e8edf2; }
+    .card h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #191f28; }
+    .card-preview {
+      width: 100%; aspect-ratio: 1;
+      background: repeating-conic-gradient(#e8edf2 0% 25%, #f8fafc 0% 50%) 0 0 / 12px 12px;
+      border-radius: 8px; margin-bottom: 8px; overflow: hidden; position: relative;
+    }
+    .card-preview canvas { width: 100%; height: 100%; display: block; }
+    .card-preview .empty-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #b0b8c1; }
+    .card button {
+      width: 100%; padding: 8px 4px; border: none; border-radius: 8px;
+      background: #0064ff; color: white; font-size: 12px; font-weight: bold;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .card button:hover { opacity: 0.85; }
+    .card button:disabled { background: #e8edf2; color: #b0b8c1; cursor: default; }
+
+    .download-all {
+      margin-top: 12px; width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: #191f28; color: white; font-size: 15px; font-weight: bold;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .download-all:hover { opacity: 0.85; }
+    .download-all:disabled { background: #e8edf2; color: #b0b8c1; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>🥄 수저 에셋 크롭 도구</h1>
+  <p class="hint">이미지를 로드하면 5종 수저를 자동 크롭 + 배경 제거 후 PNG로 다운로드합니다.</p>
+
+  <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+    <p style="font-size:15px;font-weight:bold;">📁 수저에셋.jpeg 클릭하여 로드</p>
+    <p style="font-size:12px;color:#999;margin-top:4px;">클릭 후 파일 선택</p>
+    <input type="file" id="fileInput" accept="image/*" />
+  </div>
+
+  <div class="layout">
+    <div class="preview-panel">
+      <h2>원본 이미지 (크롭 영역 표시)</h2>
+      <div class="canvas-wrap">
+        <canvas id="preview"></canvas>
+        <canvas id="overlay"></canvas>
+        <div class="placeholder" id="placeholder">이미지를 먼저 로드하세요</div>
+      </div>
+      <div class="tol-wrap">
+        <label>배경제거 감도</label>
+        <input type="range" id="tolerance" min="5" max="80" value="30" />
+        <span id="tolVal">30</span>
+      </div>
+    </div>
+
+    <div class="cards-panel">
+      <h2>5종 수저 — 각각 다운로드</h2>
+      <div class="cards" id="cards"></div>
+      <button class="download-all" id="btnAll" disabled onclick="downloadAll()">⬇️ 5종 전체 다운로드</button>
+    </div>
+  </div>
+
+  <script>
+    const SPOONS = [
+      { id: 'gold',    label: '금수저',    color: '#F5A623', rx: 0.00, ry: 0.00, rw: 0.50, rh: 0.33 },
+      { id: 'silver',  label: '은수저',    color: '#A0A8B0', rx: 0.50, ry: 0.00, rw: 0.50, rh: 0.33 },
+      { id: 'bronze',  label: '동수저',    color: '#CD7F32', rx: 0.50, ry: 0.33, rw: 0.50, rh: 0.34 },
+      { id: 'stone',   label: '돌수저',    color: '#6B7280', rx: 0.00, ry: 0.67, rw: 0.50, rh: 0.33 },
+      { id: 'diamond', label: '다이아수저', color: '#5BCEFA', rx: 0.50, ry: 0.67, rw: 0.50, rh: 0.33 },
+    ]
+
+    let img = null
+    const adj = {}
+    SPOONS.forEach(s => { adj[s.id] = { rx: s.rx, ry: s.ry, rw: s.rw, rh: s.rh } })
+
+    // Build cards on page load (buttons start disabled)
+    const cardsEl = document.getElementById('cards')
+    SPOONS.forEach(s => {
+      const card = document.createElement('div')
+      card.className = 'card'
+      card.id = 'card-' + s.id
+      card.innerHTML = `
+        <h3>${s.label}</h3>
+        <div class="card-preview">
+          <canvas id="c-${s.id}"></canvas>
+          <div class="empty-msg" id="em-${s.id}">이미지 로드 대기</div>
+        </div>
+        <button id="btn-${s.id}" disabled onclick="downloadSpoon('${s.id}')">
+          ⬇️ ${s.id}.png
+        </button>
+      `
+      cardsEl.appendChild(card)
+    })
+
+    // Refs
+    const previewCanvas = document.getElementById('preview')
+    const overlayCanvas = document.getElementById('overlay')
+    const tolInput = document.getElementById('tolerance')
+    const tolValEl = document.getElementById('tolVal')
+
+    tolInput.addEventListener('input', () => {
+      tolValEl.textContent = tolInput.value
+      if (img) updateAll()
+    })
+
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const file = e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = ev => {
+        const image = new Image()
+        image.onload = () => {
+          img = image
+          document.getElementById('placeholder').style.display = 'none'
+          drawPreview()
+          drawOverlay()
+          updateAll()
+          // Enable buttons
+          SPOONS.forEach(s => {
+            document.getElementById('btn-' + s.id).disabled = false
+            document.getElementById('em-' + s.id).style.display = 'none'
+          })
+          document.getElementById('btnAll').disabled = false
+        }
+        image.src = ev.target.result
+      }
+      reader.readAsDataURL(file)
+    })
+
+    function drawPreview() {
+      const W = 340, H = 340
+      previewCanvas.width = img.naturalWidth
+      previewCanvas.height = img.naturalHeight
+      previewCanvas.style.width = W + 'px'
+      previewCanvas.style.height = H + 'px'
+      const ctx = previewCanvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+    }
+
+    function drawOverlay() {
+      const IW = img.naturalWidth, IH = img.naturalHeight
+      overlayCanvas.width = IW
+      overlayCanvas.height = IH
+      overlayCanvas.style.width = '340px'
+      overlayCanvas.style.height = '340px'
+      const ctx = overlayCanvas.getContext('2d')
+      ctx.clearRect(0, 0, IW, IH)
+      SPOONS.forEach(s => {
+        const a = adj[s.id]
+        const x = a.rx * IW, y = a.ry * IH, w = a.rw * IW, h = a.rh * IH
+        ctx.fillStyle = s.color + '44'
+        ctx.fillRect(x, y, w, h)
+        ctx.strokeStyle = s.color
+        ctx.lineWidth = Math.max(3, IW / 150)
+        ctx.strokeRect(x, y, w, h)
+        ctx.fillStyle = 'white'
+        ctx.font = `bold ${Math.max(14, IW / 40)}px sans-serif`
+        ctx.fillText(s.label, x + 6, y + Math.max(20, IW / 30))
+      })
+    }
+
+    function updateAll() {
+      if (!img) return
+      drawOverlay()
+      SPOONS.forEach(s => renderCard(s.id))
+    }
+
+    function removeBg(ctx, w, h) {
+      const tol = parseInt(tolInput.value)
+      const imgData = ctx.getImageData(0, 0, w, h)
+      const data = imgData.data
+      const visited = new Uint8Array(w * h)
+      const queue = [0, w - 1, (h - 1) * w, (h - 1) * w + w - 1]
+      while (queue.length) {
+        const idx = queue.pop()
+        if (idx < 0 || idx >= w * h || visited[idx]) continue
+        visited[idx] = 1
+        const i = idx * 4
+        const r = data[i], g = data[i + 1], b = data[i + 2]
+        if (Math.abs(r - g) < tol && Math.abs(g - b) < tol && r > Math.max(100, 160 - tol)) {
+          data[i + 3] = 0
+          const x = idx % w, y = Math.floor(idx / w)
+          if (x > 0) queue.push(idx - 1)
+          if (x < w - 1) queue.push(idx + 1)
+          if (y > 0) queue.push(idx - w)
+          if (y < h - 1) queue.push(idx + w)
+        }
+      }
+      ctx.putImageData(imgData, 0, 0)
+    }
+
+    function cropToCanvas(id) {
+      const a = adj[id]
+      const IW = img.naturalWidth, IH = img.naturalHeight
+      const sx = Math.round(a.rx * IW), sy = Math.round(a.ry * IH)
+      const sw = Math.round(a.rw * IW), sh = Math.round(a.rh * IH)
+      const c = document.createElement('canvas')
+      c.width = sw; c.height = sh
+      const ctx = c.getContext('2d')
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
+      removeBg(ctx, sw, sh)
+      return c
+    }
+
+    function renderCard(id) {
+      const c = document.getElementById('c-' + id)
+      const src = cropToCanvas(id)
+      c.width = src.width
+      c.height = src.height
+      c.getContext('2d').drawImage(src, 0, 0)
+    }
+
+    function downloadSpoon(id) {
+      if (!img) return
+      const c = cropToCanvas(id)
+      c.toBlob(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `spoon-${id}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 'image/png')
+    }
+
+    function downloadAll() {
+      SPOONS.forEach((s, i) => setTimeout(() => downloadSpoon(s.id), i * 300))
+    }
+  </script>
+</body>
+</html>

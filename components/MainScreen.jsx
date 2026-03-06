@@ -474,7 +474,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
             {adLoading === 'diamond' ? (
               <div className="w-5 h-5 border-2 border-[#0064FF] border-t-transparent rounded-full animate-spin" />
             ) : (
-              <img src="/spoons/spoon-diamond.svg" alt="다이아 수저" className="w-7 h-7 object-contain" />
+              <img src="/spoons/spoon-diamond.png" alt="다이아 수저" className="w-7 h-7 object-contain" />
             )}
             <span className="text-[10px] font-medium leading-tight text-center">
               {diamondBoosted ? boostDisplay : '다이아수저 확률×10'}
