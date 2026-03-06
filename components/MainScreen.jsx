@@ -358,7 +358,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
       )}
 
       {/* 바위 영역 */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 px-5 py-4">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start gap-4 px-5 pt-6">
         <div className="relative flex flex-col items-center">
           {/* 말풍선 */}
           <AnimatePresence>
@@ -392,7 +392,7 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
             animate={isTapping ? tapControls : { y: [0, -6, 0] }}
             transition={isTapping ? undefined : { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
             className="flex items-center justify-center"
-            style={{ fontSize: 160, lineHeight: 1, filter: `drop-shadow(0 20px 30px rgba(0,0,0,0.12)) ${crackStage >= 2 ? 'brightness(0.85)' : ''}` }}
+            style={{ fontSize: 200, lineHeight: 1, filter: `drop-shadow(0 20px 30px rgba(0,0,0,0.12)) ${crackStage >= 2 ? 'brightness(0.85)' : ''}` }}
           >
             {rockEmoji}
           </motion.div>
