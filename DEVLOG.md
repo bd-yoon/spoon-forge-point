@@ -55,9 +55,11 @@ spoon-forge-point/
 │   ├── gameState.js       # 일일 상태 (KST 자정 리셋)
 │   ├── spoonLogic.js      # SPOON_TIERS, rollSpoon(), getTapCount(), formatProb()
 │   └── collectionState.js # 누적 수저 보관함 (영구)
-├── public/spoons/         # SVG 수저 5종 (spoon-diamond/gold/silver/bronze/stone.svg)
+├── public/spoons/         # PNG 수저 5종 (spoon-diamond/gold/silver/bronze/stone.png) ← 고퀄 일러스트
+├── asset/                 # 크롭 원본 PNG (수저에셋.jpeg에서 추출한 소스)
 ├── granite.config.ts      # type: 'partner', permissions: ['admob']
 ├── next.config.js         # output: 'export', trailingSlash: true
+├── tools/crop-spoons.html # 브라우저 기반 수저 크롭/배경제거 도구
 └── vercel.json            # framework 키 없음 (필수)
 ```
 
@@ -111,12 +113,12 @@ const ls = () => typeof window !== 'undefined' ? window.localStorage : null
 - 탭핑 중: 진행 바 + 탭 카운터, 부스터/카드 opacity-40
 
 ### SpoonRevealScreen.jsx
-- Spring 애니메이션으로 수저 SVG 등장
+- Spring 애니메이션으로 수저 PNG 등장
 - Canvas 컨페티 (티어 색상 기반)
 - 포인트 카운트업 애니메이션
 
 ### CollectionScreen.jsx
-- 수저 5종 그리드 (SVG 이미지 + 보유 개수 + 확률 표기)
+- 수저 5종 그리드 (PNG 이미지 + 보유 개수 + 확률 표기)
 - 확률 법적 고지: "수저 등급별 출현 확률은 위와 같습니다. 독립시행입니다."
 - 토스포인트 교환 Bottom Sheet 모달
 
@@ -127,6 +129,7 @@ const ls = () => typeof window !== 'undefined' ? window.localStorage : null
 - Framework Preset 반드시 **Other** 로 설정 (Next.js로 두면 routes-manifest 에러)
 - `vercel.json`에 `"framework"` 키 절대 금지
 - `next.config.js`의 `output: 'export'` 필수
+- **같은 레포에 Vercel 프로젝트 2개 연결 금지** — 하나는 반드시 삭제. 현재 활성 프로젝트: `spoon-forge-point-rxpx`
 
 ```json
 // vercel.json
@@ -169,6 +172,9 @@ export default defineConfig({
 | `f21c004` | 안내 텍스트 pill 제거, "두들겨서 수저 만들기", 다이아 버튼 레이블 |
 | `01798e9` | 바위 크기 160→200px, 위치 위로 |
 | `7b0610a` | 레이아웃 균형 조정 (justify-center + pb-8) |
+| `200f4a3` | DEVLOG.md 최초 작성 |
+| `7adbecd` | 수저 에셋 SVG → PNG 교체 (고퀄 일러스트), tools/crop-spoons.html 추가 |
+| `b167759` | Toast 위치 버그 수정 (우측 화면 밖 삐져나감 → left-4 right-4 고정) |
 
 ---
 
