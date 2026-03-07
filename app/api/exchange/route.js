@@ -6,8 +6,8 @@ function getKSTDateStr() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 }
 
-// 게임 로직 기반 상한: 하루 최대 5회 x diamond 1000원 = 5000원 + 여유
-const MAX_AMOUNT = 5100
+// 3개월 누적 + 다이아 1개 기준 상한
+const MAX_AMOUNT = 3000
 const MIN_AMOUNT = 10
 
 export async function POST(request) {
