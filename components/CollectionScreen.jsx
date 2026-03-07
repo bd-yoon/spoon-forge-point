@@ -13,6 +13,9 @@ export default function CollectionScreen({ onBack }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [toast, setToast] = useState(null)
   const [exchangeDone, setExchangeDone] = useState(false)
+  // 교환 완료 성공 이펙트 (P3)
+  const [exchangeSuccess, setExchangeSuccess] = useState(false)
+  const [successDisplayAmt, setSuccessDisplayAmt] = useState(0)
 
   function refreshState() {
     const c = getCollection()
@@ -36,7 +39,24 @@ export default function CollectionScreen({ onBack }) {
     setExchangeDone(true)
     refreshState()
     setShowConfirm(false)
-    showToast(`🎉 ${amount.toLocaleString()}포인트 교환 완료!`)
+
+    // 교환 완료 성공 이펙트 (P3)
+    setSuccessDisplayAmt(amount)
+    setExchangeSuccess(true)
+    const step = 16
+    const duration = 600
+    const decrement = amount / (duration / step)
+    let current = amount
+    const countTimer = setInterval(() => {
+      current -= decrement
+      if (current <= 0) {
+        setSuccessDisplayAmt(0)
+        clearInterval(countTimer)
+      } else {
+        setSuccessDisplayAmt(Math.ceil(current))
+      }
+    }, step)
+    setTimeout(() => setExchangeSuccess(false), 2000)
   }
 
   const canExchange = totalValue >= 10 && !exchangedToday
@@ -187,6 +207,45 @@ export default function CollectionScreen({ onBack }) {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 교환 완료 성공 이펙트 (P3) */}
+      <AnimatePresence>
+        {exchangeSuccess && (
+          <motion.div
+            key="exchange-success"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 flex flex-col items-center justify-center z-50 pointer-events-none"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: [0, 1.2, 1] }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="w-20 h-20 rounded-full bg-[#0064FF] flex items-center justify-center shadow-lg"
+            >
+              <span className="text-white text-[36px] font-bold leading-none">✓</span>
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.3 }}
+              className="mt-4 text-[20px] font-bold text-[#191F28]"
+            >
+              교환 완료!
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mt-1 text-[16px] font-semibold text-[#0064FF] tabular-nums"
+            >
+              {successDisplayAmt.toLocaleString()}포인트
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>

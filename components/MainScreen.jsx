@@ -58,6 +58,8 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
 
   // framer-motion 바위 bounce
   const tapControls = useAnimation()
+  // 균열 단계 shake 추적 (P2)
+  const prevCrackRef = useRef(0)
 
   const refreshState = useCallback(() => {
     setAttemptsLeft(getAttemptsLeft())
@@ -286,6 +288,25 @@ export default function MainScreen({ onTappingComplete, onGoCollection }) {
     ? (progress < 0.33 ? 0 : progress < 0.66 ? 1 : progress < 1 ? 2 : 3)
     : 0
   const rockEmoji = crackStage === 3 ? '💥' : '🪨'
+
+  // 균열 단계 진입 시 shake 이펙트 (P2)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isTapping) {
+      prevCrackRef.current = 0
+      return
+    }
+    if (crackStage > prevCrackRef.current) {
+      prevCrackRef.current = crackStage
+      if (crackStage === 1) {
+        tapControls.start({ x: [-2, 2, -2, 0], transition: { duration: 0.15 } })
+      } else if (crackStage === 2) {
+        tapControls.start({ x: [-4, 4, -4, 4, 0], scale: [1, 1.03, 1], transition: { duration: 0.20 } })
+      } else if (crackStage === 3) {
+        tapControls.start({ x: [-6, 6, -6, 6, -6, 0], scale: [1, 1.06, 0.95, 1], transition: { duration: 0.30 } })
+      }
+    }
+  }, [crackStage, isTapping, tapControls])
 
   return (
     <div
