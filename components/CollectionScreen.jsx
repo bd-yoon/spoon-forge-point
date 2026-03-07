@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getCollection, getTotalValue, exchangeAll } from '../lib/collectionState'
 import { hasExchangedToday, setExchangedToday } from '../lib/gameState'
 import { formatProb } from '../lib/spoonLogic'
+import { getUserId } from '../lib/userId'
 
 export default function CollectionScreen({ onBack }) {
   const [collection, setCollection] = useState([])
@@ -13,6 +14,7 @@ export default function CollectionScreen({ onBack }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [toast, setToast] = useState(null)
   const [exchangeDone, setExchangeDone] = useState(false)
+  const [loading, setLoading] = useState(false)
   // 교환 완료 성공 이펙트 (P3)
   const [exchangeSuccess, setExchangeSuccess] = useState(false)
   const [successDisplayAmt, setSuccessDisplayAmt] = useState(0)
@@ -33,30 +35,52 @@ export default function CollectionScreen({ onBack }) {
     setTimeout(() => setToast(null), 2500)
   }
 
-  function handleExchange() {
-    const amount = exchangeAll()
-    setExchangedToday()
-    setExchangeDone(true)
-    refreshState()
-    setShowConfirm(false)
+  async function handleExchange() {
+    setLoading(true)
+    try {
+      const amount = getTotalValue()
+      const userId = getUserId()
 
-    // 교환 완료 성공 이펙트 (P3)
-    setSuccessDisplayAmt(amount)
-    setExchangeSuccess(true)
-    const step = 16
-    const duration = 600
-    const decrement = amount / (duration / step)
-    let current = amount
-    const countTimer = setInterval(() => {
-      current -= decrement
-      if (current <= 0) {
-        setSuccessDisplayAmt(0)
-        clearInterval(countTimer)
-      } else {
-        setSuccessDisplayAmt(Math.ceil(current))
+      const res = await fetch('/api/exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, amount }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        showToast(err.message || '교환에 실패했어요')
+        return
       }
-    }, step)
-    setTimeout(() => setExchangeSuccess(false), 2000)
+
+      exchangeAll()
+      setExchangedToday()
+      setExchangeDone(true)
+      refreshState()
+      setShowConfirm(false)
+
+      // 교환 완료 성공 이펙트 (P3)
+      setSuccessDisplayAmt(amount)
+      setExchangeSuccess(true)
+      const step = 16
+      const duration = 600
+      const decrement = amount / (duration / step)
+      let current = amount
+      const countTimer = setInterval(() => {
+        current -= decrement
+        if (current <= 0) {
+          setSuccessDisplayAmt(0)
+          clearInterval(countTimer)
+        } else {
+          setSuccessDisplayAmt(Math.ceil(current))
+        }
+      }, step)
+      setTimeout(() => setExchangeSuccess(false), 2000)
+    } catch (e) {
+      showToast('네트워크 오류, 다시 시도해주세요')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const canExchange = totalValue >= 10 && !exchangedToday
@@ -151,8 +175,8 @@ export default function CollectionScreen({ onBack }) {
       {/* 교환 CTA */}
       <div className="px-4 py-4 mt-auto">
         <button
-          onClick={() => canExchange && setShowConfirm(true)}
-          disabled={!canExchange}
+          onClick={() => canExchange && !loading && setShowConfirm(true)}
+          disabled={!canExchange || loading}
           className={`w-full py-4 rounded-2xl text-[16px] font-bold transition-all
             ${canExchange
               ? 'bg-[#0064FF] text-white active:scale-95'
@@ -201,9 +225,11 @@ export default function CollectionScreen({ onBack }) {
                 </button>
                 <button
                   onClick={handleExchange}
-                  className="flex-1 py-4 rounded-2xl bg-[#0064FF] text-white text-[15px] font-bold active:scale-95 transition-transform"
+                  disabled={loading}
+                  className={`flex-1 py-4 rounded-2xl text-[15px] font-bold transition-transform
+                    ${loading ? 'bg-[#0064FF]/60 text-white/80' : 'bg-[#0064FF] text-white active:scale-95'}`}
                 >
-                  교환하기
+                  {loading ? '교환 중...' : '교환하기'}
                 </button>
               </div>
             </motion.div>

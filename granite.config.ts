@@ -15,7 +15,7 @@ export default defineConfig({
       build: 'next build',
     },
   },
-  outdir: 'out',
+  outdir: '.next',
   webViewProps: {
     type: 'partner',
     bounces: false,

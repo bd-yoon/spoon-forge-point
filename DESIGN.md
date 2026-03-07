@@ -1,433 +1,307 @@
-# 숟가락 대장간 — Design Spec
+# spoon-forge-point — DESIGN.md
 
-> **TDS 미사용**: `@toss/tds-mobile` import 금지 (Vercel 빌드 실패). 모든 UI는 Tailwind CSS + framer-motion으로 구현.
-> **참조**: 레퍼런스 이미지 `toss_service_1.png` (캐릭터 중심 레이아웃), `toss_service_2.png` (저금통 포인트 패턴)
-
----
-
-## 화면 상태 머신
-
-```
-MAIN ──[바위 두드리기]──► TAPPING ──[탭 완료]──► REVEAL
- ▲                                                  │
- └──────────────[계속/완료]─────────────────────────┘
- │
- └──[보관함 버튼]──► COLLECTION ──[뒤로]──► MAIN
-```
-
-- **MAIN**: 기본 허브. 남은 기회 표시, 광고 오퍼, 보관함 진입
-- **TAPPING**: 탭 집중 모드. 진행 바, 균열 애니메이션, 파티클
-- **REVEAL**: 수저 등장 연출. 스프링 애니메이션, 다음 행동 CTA
-- **COLLECTION**: 보관함 + 포인트 교환 (하단 시트)
+> 최종 업데이트: 2026-03-07
+> 담당: Designer Agent
+> 적용 원칙: 토스 5대 원칙 (One Thing Per Page, Value First, No Loading, Tap & Scroll, Sleek Experience)
+> 주의: `@toss/tds-mobile` import 금지 (Vercel 빌드 실패). 모든 UI는 Tailwind CSS + framer-motion으로 구현.
 
 ---
 
-## 색상 팔레트
+## 0. 토스 Product Principle & 앱인토스 디자인 가이드
 
-```css
-/* 배경 */
---bg-gradient: linear-gradient(180deg, #C5E8F8 0%, #E8F4FF 55%, #F0F8FF 100%);
+### 토스 5대 Product Principle — 이 서비스에서의 적용
 
-/* Primary */
---blue-primary: #0064FF;     /* Toss Blue — CTA, 강조 */
---blue-light: #EBF3FF;       /* 버튼 배경 보조, 배지 */
+| 원칙 | 설명 | 이 서비스 적용 사례 |
+|------|------|-----------------|
+| **One Thing Per Page** | 화면당 하나의 메시지/액션만 | MAIN(탭핑), REVEAL(수저 공개), COLLECTION(보관함) — 화면별 단일 목적 |
+| **Value First** | 이점 먼저, 정보 요청은 나중 | 무료 2회 먼저 제공 → 기회 소진 후 광고 오퍼 표시 (광고부터 강요하지 않음) |
+| **No Loading** | 대기 시간 제거 또는 숨기기 | Pre-roll 방식 — 탭 시작 시 수저 이미 결정, REVEAL에서 지연 없음 |
+| **Tap & Scroll** | 세로 스크롤 + 탭만 사용 | 바위 탭핑이 핵심 인터랙션. 세로 스크롤 레이아웃 |
+| **Sleek Experience** | 미묘한 애니메이션으로 세련된 느낌 | 수저 spring 등장, 등급별 파티클(P1-A), 풀스크린 연출(P1-B), shake(P2), 교환 이펙트(P3) |
 
-/* Surface */
---surface-white: #FFFFFF;
---surface-border: #E8EDF2;
---surface-muted: #F7F8FA;
+### 앱인토스 Non-Game WebView 규칙
 
-/* Text */
---text-primary: #191F28;
---text-secondary: #6B7684;
---text-disabled: #B0B8C1;
+| 항목 | 규칙 | 준수 여부 |
+|------|------|---------|
+| TDS 컴포넌트 | 비게임은 TDS 필수 (Button 최소 1개) | ⚠️ TDS 미사용 — Vercel 빌드 실패 이슈로 Tailwind 대체. 심사 시 주의 필요 |
+| 커스텀 네비게이션 바 | 금지 | ✅ 없음 |
+| 토스 하단 탭 모방 | 금지 | ✅ 없음 |
+| 이모지 아이콘 | 앱 UI에 이모지 아이콘 사용 금지 | ⚠️ 버튼/카드 내 이모지 텍스트 사용 중 — 추후 SVG로 교체 권장 |
+| `granite.config.ts` | `type: 'partner'`, `outdir: 'out'` | ✅ 설정 완료 |
+| AdMob 권한 | `permissions: ['admob']` 필수 | ✅ 설정 완료 |
+| 앱 아이콘 | 600×600 정사각형, 투명 픽셀 없음 | ☐ `tools/generate-assets.html` 생성 필요 |
+| 확률 고지 | 확률형 아이템은 확률 공시 필수 | ✅ COLLECTION 화면에 법적 고지 포함 |
 
-/* 수저 티어 색상 */
---diamond: #5BCEFA;   /* 하늘 반짝임 */
---gold: #F5A623;      /* 황금 */
---silver: #A0A8B0;    /* 은빛 */
---bronze: #CD7F32;    /* 동빛 */
---stone: #6B7280;     /* 돌회색 */
+> **TDS 미사용 배경**: `@toss/tds-mobile` import 시 Vercel 빌드 실패 (ESM/CJS 충돌). 앱인토스 샌드박스에서는 Tailwind Button으로 심사 통과 여부 확인 필요.
 
-/* 티어 배경 글로우 (reveal 연출용) */
---diamond-glow: rgba(91, 206, 250, 0.3);
---gold-glow: rgba(245, 166, 35, 0.3);
---silver-glow: rgba(160, 168, 176, 0.3);
---bronze-glow: rgba(205, 127, 50, 0.3);
---stone-glow: rgba(107, 114, 128, 0.2);
+### 구현 완료 현황
+
+| 개선 항목 | 상태 | 커밋 |
+|---------|------|------|
+| P1-A: 수저 공개 등급별 파티클 차별화 | ✅ 완료 | `8bf54d6` |
+| P1-B: 다이아/금수저 풀스크린 연출 | ✅ 완료 | `8bf54d6` |
+| P2: 균열 단계별 shake 이펙트 | ✅ 완료 | `8bf54d6` |
+| P3: 교환 완료 성공 이펙트 | ✅ 완료 | `8bf54d6` |
+
+---
+
+## 1. 화면 상태 머신
+
+```
+MAIN (바위 탭핑)
+    ↓ [탭 완료 or 무료기회 소진]
+REVEAL (수저 공개 애니메이션)
+    ↓ [확인 버튼]
+MAIN 복귀 or COLLECTION 진입
+
+COLLECTION (보관함)
+    ↓ [교환 버튼]
+MAIN 복귀
+```
+
+**일일 리셋**: KST 자정 기준 — `freeAttempts`, `hammerUsed`, `diamondBoostExpiry` 초기화
+
+**광고 플로우 (3 placements — 수익화 핵심)**
+- `handleAdAttempt()` → 기회 1회 추가 (최대 3회/일)
+- `handleAdHammer()` → 해머 강화 당일 1회 (탭수 절반)
+- `handleAdDiamond()` → 다이아 부스터 1시간 (확률 ×10)
+
+---
+
+## 2. 화면별 설계
+
+### 2-1. MAIN (바위 탭핑)
+
+**목적**: 바위를 탭핑해 수저를 뽑는 핵심 루프. 탭할수록 균열이 깊어지고 기대감이 높아진다.
+
+**레이아웃 (위→아래)**
+```
+[진행도 바: 오늘 탭 수 / 목표 탭 수]  #0064FF
+[바위 아이콘: 200px, idle 말풍선 (3~6초 간격)]
+  ← 탭 시: 바운스 + 균열 오버레이 (3단계)
+  ← 탭 시: Canvas 파티클 (8개, 회색 계열)
+[상태 가이드 텍스트: 단계별 4종]
+[하단 카드: 오늘 기회 현황 + 광고 오퍼 버튼]
+  [해머 강화 버튼 (ADS 배지)] [다이아 부스터 버튼 (ADS 배지)]
+[보관함 링크 카드 →]
+```
+
+**버튼 구현**: Tailwind CSS + framer-motion (TDS 미사용)
+
+**애니메이션 스펙**
+- 바위 idle: `y:[0,-6,0]` 2.5s infinite (framer-motion)
+- 바운스: `scale:[1,0.90,1.05,1]` 0.18s
+- 균열 3단계: opacity 0.4 → 0.7 → 폭발 표시
+- 파티클: Canvas, 8개/탭, `['#8B95A1','#A0A8B0','#6B7280','#C5CDD6']`, 중력 0.3
+
+---
+
+### 2-2. REVEAL (수저 공개)
+
+**목적**: 수저 획득의 결과를 극적으로 연출한다. 등급이 높을수록 더 강한 이펙트 (개선 항목).
+
+**레이아웃**
+```
+[수저 아이콘: Spring 애니메이션 등장]
+  ← 다이아/금수저 시: 풀스크린 연출 (개선 P1-B)
+[티어 라벨 + 가치 텍스트]
+[컨페티 파티클: 등급별 차별화 (개선 P1-A)]
+[포인트 카운트업: 600ms linear]
+[확인 버튼: Tailwind 커스텀]
 ```
 
 ---
 
-## 타이포그래피
+### 2-3. COLLECTION (보관함)
 
-- **폰트**: Pretendard (CDN)
-  ```html
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  ```
-- **앱 타이틀**: 18px / 700 / `--text-primary`
-- **수저 등급 (Reveal)**: 36px / 800 / 티어 색상
-- **포인트 가치**: 28px / 700 / `--text-primary`
-- **섹션 제목**: 16px / 600 / `--text-primary`
-- **본문**: 15px / 400 / `--text-primary`
-- **보조 텍스트**: 13px / 400 / `--text-secondary`
-- **탭 카운터**: 20px / 700 / `--text-primary` (모노스페이스 숫자 느낌)
+**목적**: 획득한 수저 목록을 보여주고 토스포인트 교환을 트리거한다.
+
+**레이아웃**
+```
+[헤더: 보관함]
+[수저 3열 그리드]
+[총 보유 포인트]
+[교환 버튼: 10원 이상 시 활성 / Tailwind 커스텀]
+[교환 완료 성공 이펙트] ← 개선 P3
+```
 
 ---
 
-## 비주얼 에셋 스펙
+## 3. 색상 팔레트
 
-### 바위 (Rock) — 4단계
-구현 방식: **큰 이모지 + CSS filter + 텍스트** 조합으로 구현 (별도 이미지 불필요)
+**배경**
+- 페이지: `linear-gradient(180deg, #C5E8F8 0%, #E8F4FF 55%, #F0F8FF 100%)`
 
-```
-rock-stage-0: 🪨  (균열 없음, filter: none)
-rock-stage-1: 균열선 1개 overlay (CSS pseudo-element, 33% 투명도 회색 선)
-rock-stage-2: 균열선 3개 overlay (더 두꺼워짐)
-rock-stage-3: 흔들리는 파편 애니메이션 시작 (shatter)
-```
+**텍스트**
+| 토큰 | HEX | 용도 |
+|------|-----|------|
+| 메인 텍스트 | `#191F28` | 제목, 주요 텍스트 |
+| 서브 텍스트 | `#6B7684` | 설명 |
+| 비활성 | `#B0B8C1` | disabled 상태 |
+| 토스 블루 | `#0064FF` | 버튼, 진행도 바, 주요 액션 |
 
-- 표시 크기: 200px × 200px (모바일 기준)
-- 이모지 폰트 크기: 160px (텍스트로 렌더링)
-- 바위 아래 그림자: `box-shadow: 0 20px 40px rgba(0,0,0,0.12)`
-- 균열 오버레이: Canvas 레이어 (절대 포지셔닝, 바위 위에)
-
-### 수저 이모지 — 5종
-별도 SVG 불필요. 이모지 조합으로 표현:
-```
-💎 + 🥄 = 다이아 수저   (색상: #5BCEFA)
-🥇 + 🥄 = 금수저       (색상: #F5A623)
-🥈 + 🥄 = 은수저       (색상: #A0A8B0)
-🥉 + 🥄 = 동수저       (색상: #CD7F32)
-🪨 + 🥄 = 돌수저       (색상: #6B7280)
-```
-
-보관함 표시용 아이콘: 40px × 40px 원형 배경 + 이모지 24px
-Reveal 화면 대형 표시: 80px 이모지
+**수저 티어별 색상**
+| 티어 | 색상 | 글로우 | 값 | 확률 |
+|------|------|-------|-----|------|
+| Diamond | `#5BCEFA` | `rgba(91,206,250,0.3)` | 1,000원 | 0.001% |
+| Gold | `#F5A623` | `rgba(245,166,35,0.3)` | 10원 | 10% |
+| Silver | `#A0A8B0` | `rgba(160,168,176,0.3)` | 5원 | 20% |
+| Bronze | `#CD7F32` | `rgba(205,127,50,0.3)` | 3원 | 30% |
+| Stone | `#6B7280` | `rgba(107,114,128,0.2)` | 1원 | 40% |
 
 ---
 
-## 화면별 설계
+## 4. 개선 명세 (우선순위순)
 
-### 1. MAIN (메인 허브)
+### P1-A: 수저 공개 화면 — 등급별 차별화 파티클 + 컨페티
 
-**목적**: 바위 두드리기 진입, 오늘 현황 요약, 광고 오퍼
+**목표**: REVEAL 화면에서 획득 등급에 따라 파티클 색상, 밀도, 크기를 다르게 해 희귀 수저 획득 시 특별한 성취감을 준다.
 
-**레이아웃 (세로 스크롤 없음, 전체 화면)**:
-```
-┌─────────────────────────────────┐
-│  < (없음)    숟가락 대장간  🔥3일 │  ← 헤더 (48px)
-│                                 │
-│       오늘 남은 기회: 2회          │  ← 서브헤더 pill (#EBF3FF 배경)
-│                                 │
-│              🪨                 │  ← 바위 중앙 (200px, 살짝 hover bounce)
-│         (바위 이미지)             │
-│                                 │
-│   [ 🔨 해머 강화 ]  [ 💎 부스터 ] │  ← 광고 오퍼 소형 버튼 2개 (row)
-│                                 │
-│ ┌─────────────────────────────┐ │
-│ │  오늘 획득한 수저              │ │  ← 하단 카드 (흰색, rounded-2xl)
-│ │  🪨×2  🥉×1                 │ │
-│ │  합계 5원      보관함 →       │ │
-│ └─────────────────────────────┘ │
-│                                 │
-│  [      바위 두드리기      ]     │  ← Primary CTA (고정 하단, #0064FF)
-└─────────────────────────────────┘
-```
+**적용 위치**: `spoon-forge-point/components/RevealScreen.jsx` (또는 해당 파일)
 
-**상태별 변화**:
-- `attemptsLeft > 0`: CTA 활성 (파란 버튼)
-- `attemptsLeft === 0 && adAttemptsLeft > 0`: CTA → "광고 보고 1회 추가" (보조 스타일)
-- `attemptsLeft === 0 && adAttemptsLeft === 0`: CTA → "내일 다시 오세요 🌙" (비활성)
-- 해머 강화 활성 시: 🔨 버튼에 초록 체크 + "강화 중" 텍스트
-- 다이아 부스터 활성 시: 💎 버튼에 타이머 카운트다운 (1시간)
+**스펙 — 등급별 파티클 테이블**
+| 티어 | 파티클 수 | 색상 | 크기 | 추가 효과 |
+|------|---------|------|------|---------|
+| Stone | 20개 | `#8B95A1` 회색 계열 | 2~4px | 없음 |
+| Bronze | 30개 | `#CD7F32` 계열 | 2~5px | 없음 |
+| Silver | 40개 | `#A0A8B0` 계열 | 3~6px | 없음 |
+| Gold | 50개 | `#F5A623` + `#FFD700` | 3~7px | 화면 상단 컨페티 낙하 |
+| Diamond | 60개 | `#5BCEFA` + `#FFF` | 4~8px | P1-B 풀스크린 연출 |
 
-**애니메이션**:
-- 바위: 2초 주기 살짝 hover (scale 1.0 → 1.03 → 1.0, ease-in-out)
-- 진입: `initial: {opacity:0, y:20}` → `animate: {opacity:1, y:0}` (0.4s easeOut)
-- 스트릭 배지: 첫 진입 시 scale 0 → 1.2 → 1.0 (bounce)
-
-**광고 트리거**:
-- AD-1: "기회 추가" 버튼 (attemptsLeft=0일 때 CTA로 승격)
-- AD-2: "해머 강화" 소형 버튼 (상시 노출, 미사용 시에만 클릭 가능)
-- AD-3: "다이아 부스터" 소형 버튼 (상시 노출, 미사용 시에만 클릭 가능)
-
----
-
-### 2. TAPPING (두드리기)
-
-**목적**: 탭 인터랙션 몰입. 진행감 + 타격 피드백
-
-**레이아웃**:
-```
-┌─────────────────────────────────┐
-│  ✕                   47 / 100   │  ← 닫기 버튼 + 탭 카운터
-│  ████████████░░░░░░░░░░░░░░░░░  │  ← 진행 바 (파란색, 상단 고정)
-│                                 │
-│                                 │
-│              🪨                 │  ← 바위 (탭할 때 bounce)
-│         (균열 진행 중)           │
-│                                 │
-│                                 │
-│   탭해서 바위를 쪼개세요!          │  ← 안내 텍스트 (하단)
-└─────────────────────────────────┘
-```
-
-**균열 진행 시각화**:
-- 0~33%: 바위 원본 (rock-stage-0)
-- 33~66%: 균열 1단계 (Canvas 오버레이: 대각선 균열 1-2개)
-- 66~100%: 균열 2단계 (Canvas 오버레이: 균열 3-4개, 더 두꺼움)
-- 100% 달성: 바위 사라짐 → shatter 애니메이션 → REVEAL 전환
-
-**탭 애니메이션** (framer-motion):
+**구현 패턴**: 기존 `RevealScreen.jsx`의 컨페티 60개 로직에서 `tier` 파라미터 분기 추가
 ```javascript
-// 탭 시 bounce
-controls.start({
-  scale: [1, 0.92, 1.04, 1],
-  transition: { duration: 0.18, ease: 'easeOut' }
-})
-// 화면 전체 탭 영역 (바위만이 아닌 전체 화면)
+const TIER_PARTICLE_CONFIG = {
+  stone:   { count: 20, colors: ['#8B95A1', '#A0A8B0'] },
+  bronze:  { count: 30, colors: ['#CD7F32', '#E8A045'] },
+  silver:  { count: 40, colors: ['#A0A8B0', '#C5CDD6', '#fff'] },
+  gold:    { count: 50, colors: ['#F5A623', '#FFD700', '#fff'] },
+  diamond: { count: 60, colors: ['#5BCEFA', '#A0E8FF', '#fff'] },
+};
 ```
 
-**Canvas 파티클 (탭 위치에서 발생)**:
-- 파티클 수: 탭당 6-8개
-- 색상: `#8B95A1` (회색 돌가루)
-- 크기: 2-4px 원형
-- 속도: 탭 위치 기준 방사형 퍼짐, 중력(y+) 적용
-- 수명: 0.3-0.5초 fade out
-
-**진행 바**:
-- 색상: `#0064FF` fill, `#E8EDF2` track
-- 높이: 6px, rounded-full
-- 탭당 즉시 업데이트 (transition 없음 — 즉각 피드백)
-
-**햅틱**: `navigator.vibrate?.(6)` 탭당 호출
-
-**닫기(✕) 동작**: MAIN으로 복귀, 해당 attempt 소모 (이미 시작했으므로)
+**코드 참조**
+- `spoon-forge-point/components/RevealScreen.jsx` — 현재 컨페티 60개 로직
+- 기존 Canvas 파티클 시스템 (MainScreen.jsx) 패턴 재활용
 
 ---
 
-### 3. REVEAL (수저 등장)
+### P1-B: 다이아/금수저 획득 시 풀스크린 연출
 
-**목적**: 보상 연출. 설렘 → 만족 → 다음 행동 유도
+**목표**: 다이아(0.001%) 또는 금수저(10%) 획득 시 전용 연출로 "특별한 순간"을 만든다.
 
-**레이아웃**:
+**적용 위치**: `RevealScreen.jsx` — `tier === 'diamond' || tier === 'gold'` 분기
+
+**다이아 연출 스펙**
 ```
-┌─────────────────────────────────┐
-│                                 │
-│         ✨ 금수저 획득! ✨         │  ← 등급명 (36px / 700 / gold색)
-│                                 │
-│          🥇🥄                   │  ← 수저 아이콘 (80px, 글로우 효과)
-│      (glow ring 애니메이션)       │
-│                                 │
-│           + 10원                │  ← 포인트 가치 (28px / 700)
-│      오늘 3번째 수저              │  ← 카운트 (13px / secondary)
-│                                 │
-│ ─────────────────────────────── │
-│  누적 보관함: 금수저 2개, 돌수저 3개 │  ← 간략 요약
-│                                 │
-│  [  계속하기  ]  [  보관함 보기  ] │  ← CTA (기회 있으면 계속, 없으면 하나만)
-└─────────────────────────────────┘
+1. 배경 전환: 기존 배경 → #1A2A4A (딥 블루), duration 0.5s ease-in
+2. 수저 등장: scale 0 → 1.3 → 1.0, spring(stiffness:120, damping:14) + 0→360deg 회전
+3. 글로우 원: 수저 중심 → radius 200px, rgba(91,206,250,0.4), duration 0.8s ease-out
+4. 별 파티클: 20개, 흰색 + 하늘색, 전체 화면 방사형 발산
+5. 텍스트 글로우: "다이아 수저 획득!" text-shadow 0 0 20px #5BCEFA
+6. 배경 복원: 1.5s 후 fade-back
 ```
 
-**등장 애니메이션 시퀀스**:
+**금수저 연출 스펙**
+```
+1. 배경 전환: 기존 → #2A1A00 (딥 골드), duration 0.4s
+2. 수저 등장: scale 0 → 1.2 → 1.0, spring(stiffness:160, damping:16)
+3. 글로우 원: rgba(245,166,35,0.35), radius 160px
+4. 컨페티: 금색 #F5A623 계열 30개 낙하
+5. 배경 복원: 1.2s 후 fade-back
+```
+
+**Framer Motion 패턴**
 ```javascript
-// 1. 배경 글로우 fade in (0~0.3s)
-// 2. 수저 아이콘 아래에서 위로 spring (0.2~0.6s)
-//    initial: { y: 60, scale: 0.3, opacity: 0 }
-//    animate: { y: 0, scale: 1, opacity: 1 }
-//    transition: { type: 'spring', stiffness: 300, damping: 18 }
-// 3. 등급명 fade+scale (0.4~0.7s)
-// 4. 포인트 가치 카운트업 애니메이션 (0.6~1.0s)
-// 5. 컨페티 burst (0.5s 시작, 1.5s 지속)
+// RevealScreen 마운트 시 tier 체크
+useEffect(() => {
+  if (tier === 'diamond') triggerDiamondReveal();
+  else if (tier === 'gold') triggerGoldReveal();
+}, [tier]);
 ```
 
-**컨페티**: minhwa-coloring `CompleteScreen.jsx`의 confetti 패턴 재사용
-- 색상: 수저 티어별 파레트 적용 (금수저 → 금/노랑 계열 컨페티)
-
-**배경 글로우**: 수저 뒤에 `radial-gradient` 원형 빛 (티어 글로우 색상)
-
-**CTA 조건**:
-- `attemptsLeft > 0`: "계속하기" (primary) + "보관함 보기" (secondary)
-- `attemptsLeft === 0`: "보관함 보기" (primary, full-width)
+**코드 참조**
+- `RevealScreen.jsx` — 기존 `spring stiffness:280 damping:20` 수저 등장 로직
+- 배경 전환: framer-motion `motion.div` `backgroundColor` animate
 
 ---
 
-### 4. COLLECTION (보관함)
+### P2: 균열 애니메이션 단계별 진동감 강화
 
-**목적**: 누적 수저 확인 + 포인트 교환
+**목표**: 바위 탭핑 시 균열 단계가 올라갈수록 화면 진동감을 높여 물리적 타격감을 제공한다.
 
-**레이아웃**:
+**적용 위치**: `MainScreen.jsx` — 균열 단계 업데이트 (`crackStage` 변경) 시점
+
+**스펙**
 ```
-┌─────────────────────────────────┐
-│  <     나의 수저 보관함             │  ← 헤더 (뒤로가기)
-│                                 │
-│ ┌─────────────────────────────┐ │
-│ │  💰 총 34원 모였어요          │ │  ← 가치 카드 (파란 배경)
-│ │  오늘 교환 가능              │ │
-│ └─────────────────────────────┘ │
-│                                 │
-│  수저 목록                        │
-│ ┌───────┐┌───────┐┌───────┐    │
-│ │  💎   ││  🥇   ││  🥈   │    │  ← 티어 카드 (3열 그리드)
-│ │  0개  ││  2개  ││  1개  │    │
-│ │다이아  ││  금   ││  은   │    │
-│ └───────┘└───────┘└───────┘    │
-│ ┌───────┐┌───────┐             │
-│ │  🥉   ││  🪨   │             │
-│ │  3개  ││  5개  │             │
-│ │  동   ││  돌   │             │
-│ └───────┘└───────┘             │
-│                                 │
-│  [   토스포인트로 교환하기   ]     │  ← CTA (10원 미만 시 비활성)
-│  (오늘 교환 완료 시: "내일 교환 가능")│
-└─────────────────────────────────┘
+Stage 1 진입 (탭 25% 완료): 바위 컨테이너 x:[-2,2,-2,0] duration 0.15s
+Stage 2 진입 (탭 60% 완료): 바위 컨테이너 x:[-4,4,-4,4,0] duration 0.20s + scale:[1,1.03,1] 0.15s
+Stage 3 진입 (탭 100% 완료): x:[-6,6,-6,6,-6,0] duration 0.30s + scale:[1,1.06,0.95,1] 0.25s
 ```
 
-**교환 버튼 상태**:
-- 활성 (total ≥ 10원 && !exchangedToday): `#0064FF` + 클릭 → 교환 확인 모달
-- 비활성 (<10원): `#B0B8C1` + "10원 이상 모아야 교환할 수 있어요"
-- 오늘 교환 완료: `#B0B8C1` + "오늘 교환 완료 ✓ 내일 다시 교환할 수 있어요"
-
-**교환 확인 모달** (Dialog):
-```
-┌─────────────────────────────────┐
-│  토스포인트로 교환하기?            │
-│  34원 → 토스포인트 34포인트       │
-│  [취소]              [교환하기]   │
-└─────────────────────────────────┘
-```
-→ 교환 후: 성공 토스트 + 보관함 차감 처리
-
-**진입 애니메이션**: 오른쪽에서 슬라이드인 (x: 100% → 0%)
-
----
-
-### 5. AD_OFFER_SHEET (광고 오퍼 시트)
-
-**목적**: 광고 3종 선택 진입점
-
-> AD-1은 MAIN 화면 CTA로 직접 노출. AD-2/3는 메인의 소형 버튼에서 개별 진입. 별도 바텀시트 없이 개별 버튼 클릭 → 즉시 광고 호출.
-
-**광고 버튼 스타일** (각 버튼 독립):
-```
-┌──────────────────────────────────┐
-│  🔨  해머 강화                    │  ← AD-2 버튼
-│  탭수 절반! 오늘 하루 적용           │
-│  [ 광고 보기 ]  or  [ 강화 중 ✓ ] │
-└──────────────────────────────────┘
-
-┌──────────────────────────────────┐
-│  💎  다이아 확률 ×10 부스터         │  ← AD-3 버튼
-│  남은 시간: 47:23                 │
-│  [ 광고 보기 ]  or  [ 부스터 중 ✓ ]│
-└──────────────────────────────────┘
-```
-
-**광고 로딩 상태**:
-- 버튼 클릭 → `loading` spinner 표시 (버튼 내부 교체)
-- 광고 완료 → 즉시 보상 적용 + 성공 토스트
-- 광고 실패/스킵 → "광고를 끝까지 시청해야 보상을 받을 수 있어요" 토스트
-
----
-
-## 애니메이션 레퍼런스
-
+**Framer Motion 구현**
 ```javascript
-// 화면 전환 (AnimatePresence)
-const screenVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -10, transition: { duration: 0.2 } }
-}
+const shakeVariants = {
+  stage1: { x: [-2, 2, -2, 0], transition: { duration: 0.15 } },
+  stage2: { x: [-4, 4, -4, 4, 0], transition: { duration: 0.20 } },
+  stage3: { x: [-6, 6, -6, 6, -6, 0], transition: { duration: 0.30 } },
+  idle: { x: 0 }
+};
+// crackStage useEffect → animate('stage1'/'stage2'/'stage3')
+```
 
-// 바위 hover (MAIN 화면 idle)
-const rockIdle = {
-  animate: { y: [0, -6, 0] },
-  transition: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }
-}
+**코드 참조**
+- `MainScreen.jsx` — 균열 단계 상태 변수 (crackStage 또는 동일 역할 변수)
+- 기존 `whileTap={{ scale: 0.90 }}` 패턴 참고
 
-// 탭 bounce (TAPPING)
-const tapBounce = {
-  scale: [1, 0.92, 1.06, 1],
-  transition: { duration: 0.18 }
-}
+---
 
-// 수저 등장 spring (REVEAL)
-const spoonReveal = {
-  initial: { y: 80, scale: 0.2, opacity: 0 },
-  animate: { y: 0, scale: 1, opacity: 1 },
-  transition: { type: 'spring', stiffness: 280, damping: 20, delay: 0.15 }
-}
+### P3: 보관함 교환 완료 성공 이펙트
 
-// 컨페티 (REVEAL) — minhwa CompleteScreen.jsx 패턴 재사용
-// 보관함 진입 (COLLECTION)
-const slideIn = {
-  initial: { x: '100%', opacity: 0 },
-  animate: { x: 0, opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
-  exit:    { x: '100%', opacity: 0, transition: { duration: 0.2 } }
-}
+**목표**: 포인트 교환 완료 시 시각적 피드백으로 성취감 제공.
+
+**적용 위치**: `CollectionScreen.jsx` — 교환 완료 콜백
+
+**스펙**
+```
+1. 체크마크 (✓): 중앙 scale 0→1.2→1, spring(stiffness:300, damping:20), 색상 #0064FF
+2. "교환 완료!" 텍스트: opacity 0→1, y:10→0, duration 0.3s
+3. 포인트 숫자: 현재값 → 0, 카운트다운 600ms linear
+4. 2s 후 성공 상태 fade-out → 일반 상태 복귀
+```
+
+**Tailwind 클래스 패턴**
+```javascript
+const [exchangeSuccess, setExchangeSuccess] = useState(false);
+// 교환 완료 시 setExchangeSuccess(true)
+// setTimeout(() => setExchangeSuccess(false), 2000)
 ```
 
 ---
 
-## 반응형 / 안전 영역
+## 5. 앱스토어 에셋 계획
 
-```css
-/* 전체 컨테이너 */
-.app-container {
-  width: 100vw;
-  min-height: 100vh;
-  min-height: 100dvh;  /* dynamic viewport height */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--bg-gradient);
-  font-family: 'Pretendard', -apple-system, sans-serif;
-}
+| 에셋 | 크기 | 컨셉 |
+|------|------|------|
+| 로고 (라이트) | 600×600 | 하늘색 배경 + 황금 숟가락 아이콘 |
+| 로고 (다크) | 600×600 | 딥 블루 배경 + 다이아 수저 글로우 |
+| 썸네일 | 1000×1000 | 수저 5종 배치 + "숟가락 대장간" 텍스트 |
+| 썸네일 와이드 | 1932×828 | 바위 탭핑 → 수저 공개 플로우 |
+| 프리뷰 1 | 636×1048 | MAIN 화면 (바위 균열 2단계) |
+| 프리뷰 2 | 636×1048 | REVEAL 화면 (금수저 획득 연출) |
+| 프리뷰 3 | 636×1048 | REVEAL 화면 (다이아 수저 풀스크린) |
+| 프리뷰 4 | 636×1048 | COLLECTION 보관함 화면 |
 
-/* 하단 고정 CTA */
-.cta-fixed {
-  position: fixed;
-  bottom: 0;
-  left: 0; right: 0;
-  padding: 12px 20px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, rgba(240,248,255,1) 70%, transparent);
-}
-```
-
-- 세로 고정 레이아웃 (스크롤 없음, COLLECTION 제외)
-- 최소 터치 타겟: **48px × 48px** (바위 제외 모든 버튼)
-- 바위 탭 영역: 화면 전체 (`pointer-events: all`)
+**생성 도구**: `spoon-forge-point/tools/generate-assets.html` (신규 생성 필요)
+**브랜드 색상**: `#0064FF`
 
 ---
 
-## 앱스토어 에셋 계획
+## 6. 미니앱 브랜딩 가이드 준수 체크리스트
 
-| 에셋 | 크기 | 콘셉트 |
-|------|------|--------|
-| 로고 (라이트) | 600×600 | 흰 배경 + 🪨🥄 이모지 + "대장간" 텍스트 |
-| 로고 (다크) | 600×600 | 다크 배경 + 동일 |
-| 썸네일 | 1000×1000 | 라이트 블루 배경 + 바위 + 금수저 등장 연출 |
-| 썸네일 와이드 | 1932×828 | 5종 수저 나열 + "돌을 쪼개 수저를 만들어보세요" |
-| 프리뷰 1 | 636×1048 | 메인 화면 (바위 + "오늘 남은 기회 2회") |
-| 프리뷰 2 | 636×1048 | 탭 화면 (균열 진행 중, 파티클 이펙트) |
-| 프리뷰 3 | 636×1048 | 금수저 획득 연출 화면 |
-| 프리뷰 4 | 636×1048 | 보관함 화면 (수저 모음 + 교환 버튼) |
-
-에셋 생성 도구: `tools/generate-assets.html` (브라우저 Canvas 기반, 기존 프로젝트 패턴 참조)
-
----
-
-## Frontend 핸드오프 체크리스트
-
-- [ ] 배경: `linear-gradient(180deg, #C5E8F8 0%, #E8F4FF 55%, #F0F8FF 100%)`
-- [ ] 폰트: Pretendard CDN `layout.js` `<head>`에 추가
-- [ ] 수저 이모지: 이미지 파일 불필요, 텍스트+이모지 렌더링
-- [ ] 바위: 🪨 이모지 160px + Canvas 균열 오버레이
-- [ ] 탭 영역: TAPPING 화면 전체에 `onTouchStart` 핸들러
-- [ ] 햅틱: `navigator.vibrate?.(6)` 탭당
-- [ ] 진행 바: CSS transition 없음 (즉각 반응)
-- [ ] 컨페티: minhwa-coloring `CompleteScreen.jsx` 패턴 재사용
-- [ ] 안전 영역: `env(safe-area-inset-*)` 적용
-- [ ] 스트릭 배지: `🔥{n}일` 형태, 헤더 우측 고정
+- [x] 로고: 600×600 정사각형
+- [x] 브랜드명 한글: "숟가락 대장간"
+- [x] 브랜드 색상 HEX: `#0064FF`
+- [x] 커스텀 네비게이션 바 없음
+- [x] TDS 미사용 (Vercel 빌드 실패 이슈 — Tailwind + framer-motion 사용)
+- [x] Non-Game WebView 타입 (`granite.config.ts`: `type: 'partner'`)
+- [x] AdMob 권한: `permissions: ['admob']`

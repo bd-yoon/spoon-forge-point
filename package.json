@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^1.14.1",
+    "@supabase/supabase-js": "^2.98.0",
     "framer-motion": "^12.34.3",
     "next": "14.2.5",
     "react": "^18",

@@ -183,3 +183,64 @@ export default defineConfig({
 - [ ] granite:build → .ait 패키징 → 앱인토스 샌드박스 제출
 - [ ] AdMob 테스트 ID → 프로덕션 ID 교체 (제출 직전)
 - [ ] 앱스토어 에셋 생성 (로고 600×600, 썸네일, 프리뷰 4장)
+
+---
+
+## 디자인 개선 결정사항 (2026-03-07)
+
+> `DESIGN.md` 신규 작성 완료. 아래는 핵심 결정 이유 기록.
+
+### 개선 방향 원칙
+- 광고 배치/수익화 구조 변경 없음 (3 placements 유지)
+- 성취감 이펙트 강화 + 획득 순간의 연출에 집중
+
+### P1-A: 수저 공개 등급별 파티클 차별화
+- **결정**: `TIER_PARTICLE_CONFIG` 객체로 티어별 파티클 수/색상 분기
+- **이유**: 현재 모든 등급이 동일한 60개 파티클 → 다이아/금수저도 시각적으로 특별하지 않음
+- **구현 키포인트**: `RevealScreen.jsx` 기존 컨페티 로직에 `tier` 파라미터 분기 추가
+
+### P1-B: 다이아/금수저 풀스크린 연출
+- **결정**: 배경 색상 전환 + 글로우 원 확산 + 등급별 별도 사운드/파티클
+- **이유**: 0.001% 확률 아이템이 일반 수저와 동일한 연출 → 희귀도 가치 훼손
+- **구현 키포인트**: framer-motion `backgroundColor` animate + `useEffect` tier 분기
+
+### P2: 균열 shake 이펙트
+- **결정**: 균열 3단계 각각에 진폭이 다른 x 이동 애니메이션 추가
+- **이유**: 탭핑의 물리적 타격감 부재 — 균열이 생겨도 화면 반응이 없어 단조로움
+
+### P3: 교환 완료 성공 이펙트
+- **결정**: 체크마크 pop + 포인트 카운트다운 + 2s fade-out
+- **이유**: 교환 후 아무 피드백 없어 교환이 성공했는지 불명확
+
+---
+
+## 디자인 개선 구현 완료 (2026-03-07)
+
+**커밋**: `8bf54d6` — "feat: 디자인 개선 P1~P3 — 수저 공개 연출 강화 및 이펙트 추가"
+
+**수정 파일**
+- `components/SpoonRevealScreen.jsx` — P1-A 등급별 파티클, P1-B 다이아/금수저 풀스크린 연출
+- `components/MainScreen.jsx` — P2 균열 단계별 shake 이펙트
+- `components/CollectionScreen.jsx` — P3 교환 완료 성공 이펙트
+
+### P1-A 구현: 수저 공개 등급별 파티클
+- `SpoonRevealScreen.jsx`: `TIER_PARTICLE_CONFIG` 객체로 티어별 분기
+  - stone: 20개 회색, bronze: 30개 청동, silver: 40개 은색, gold: 50개 금색, diamond: 60개 하늘색
+- Canvas 파티클 시스템: `MainScreen.jsx` 패턴 재활용 (gravity, velocity, life decay)
+
+### P1-B 구현: 다이아/금수저 풀스크린 연출
+- `SpoonRevealScreen.jsx`: `tier === 'diamond'` / `tier === 'gold'` 분기
+- 다이아: 배경 → `#1A2A4A`, 수저 0→1.3→1.0 scale + 360° 회전, 글로우 원 확산, 방사형 별 파티클
+- 금수저: 배경 → `#2A1A00`, scale 0→1.2→1.0 spring, 황금 글로우 원, 낙하 컨페티
+- `framer-motion` `backgroundColor` animate + `useEffect` 분기 처리
+
+### P2 구현: 균열 단계별 shake 이펙트
+- `MainScreen.jsx`: `crackStage` 변경 감지 → `useEffect`로 `rockControls.start()` 호출
+- Stage 1: `x:[-2,2,-2,0]` 0.15s, Stage 2: `x:[-4,4,-4,4,0]` 0.20s + scale, Stage 3: `x:[-6,6,-6,6,-6,0]` 0.30s + scale
+
+### P3 구현: 교환 완료 성공 이펙트
+- `CollectionScreen.jsx`: `exchangeSuccess` state + `successDisplayAmt` 카운트다운 state 추가
+- 체크마크 circle: `scale [0,1.2,1]` spring, `#0064FF` 배경
+- 포인트 카운트다운: `setInterval` 16ms 단계로 감소, 600ms 완료
+- `AnimatePresence` + `fixed inset-0` 오버레이, `pointer-events-none`으로 UI 차단 없음
+- 2초 후 자동 fade-out
