@@ -41,7 +41,7 @@ export default function CollectionScreen({ onBack }) {
       const amount = getTotalValue()
       const userId = getUserId()
 
-      const res = await fetch('/api/exchange', {
+      const res = await fetch('/api/exchange/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, amount }),
